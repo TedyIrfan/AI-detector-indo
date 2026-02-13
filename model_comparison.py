@@ -1,273 +1,243 @@
-"""
-Perbandingan Model untuk Bab Skripsi
-Membandingkan berbagai algoritma ML untuk deteksi AI vs Manusia
-"""
+# PERBANDINGAN MODEL MACHINE LEARNING
+# Random Forest vs Logistic Regression vs SVM
 
+# Import library yang diperlukan
 import pandas as pd
 import numpy as np
-import joblib
-import time
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
-from sklearn.neural_network import MLPClassifier
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score,
-    classification_report, confusion_matrix
+    accuracy_score, classification_report, confusion_matrix,
+    precision_score, recall_score, f1_score
 )
-import warnings
-warnings.filterwarnings('ignore')
+import joblib
+from pathlib import Path
+import time
 
-print("="*70)
-print("PERBANDINGAN MODEL - BAB SKRIPSI")
-print("="*70)
+print("PERBANDINGAN MODEL: Random Forest vs Logistic Regression vs SVM")
 
-# Load dataset
-print("\n[1] Load dataset...")
-df = pd.read_csv("dataset_final_1500.csv", encoding='utf-8')
-df = df.dropna()
-print(f"     Total data: {len(df)}")
+# Load dataset dulu
+print("\nMemuat dataset...")
+input_file = "dataset_skripsi_final.csv"
 
-# Preprocessing
-print("\n[2] Preprocessing...")
+try:
+    df = pd.read_csv(input_file)
+    print(f"[OK] Dataset dimuat: {len(df)} baris")
+    print(f"     Distribusi: MANUSIA={sum(df['label']=='MANUSIA')}, AI={sum(df['label']=='AI')}")
+except FileNotFoundError:
+    print(f"[ERROR] File {input_file} tidak ditemukan!")
+    exit(1)
+
+# Preprocessing data
+print("\nPreprocessing data...")
+
+# Mapping label biar jadi angka
 label_mapping = {'MANUSIA': 0, 'AI': 1}
-df['label_num'] = df['label'].map(label_mapping)
+df['label_encoded'] = df['label'].map(label_mapping)
 
-X = df['text']
-y = df['label_num']
+X = df['teks'].values
+y = df['label_encoded'].values
 
-# Split
-print("\n[3] Split data (80% train, 20% test)...")
+# Split data
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
-print(f"     Training: {len(X_train)}, Testing: {len(X_test)}")
 
-# TF-IDF
-print("\n[4] TF-IDF Vectorization...")
+print(f"[OK] Data di-split: Train={len(X_train)}, Test={len(X_test)}")
+
+# Vectorization dengan TF-IDF
+print("\nVectorization dengan TF-IDF...")
+
 vectorizer = TfidfVectorizer(
     max_features=5000,
     min_df=2,
     max_df=0.8,
-    ngram_range=(1, 2)
+    ngram_range=(1, 2),
+    lowercase=True
 )
 
 X_train_tfidf = vectorizer.fit_transform(X_train)
 X_test_tfidf = vectorizer.transform(X_test)
-print(f"     Features: {X_train_tfidf.shape[1]}")
 
-# Definisi model
-print("\n" + "="*70)
-print("TRAINING BERBAGAI MODEL")
-print("="*70)
+print(f"[OK] Vectorization selesai: {len(vectorizer.vocabulary_)} fitur")
+
+# Siapin 3 model
+print("\nMenyiapkan 3 model...")
 
 models = {
-    'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
-    'Naive Bayes': MultinomialNB(),
-    'Decision Tree': DecisionTreeClassifier(random_state=42),
-    'K-Nearest Neighbors': KNeighborsClassifier(n_neighbors=5),
-    'SVM Linear': SVC(kernel='linear', probability=True, random_state=42),
-    'SVM RBF': SVC(kernel='rbf', probability=True, random_state=42),
-    'Neural Network': MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=500, random_state=42),
-    'XGBoost': None,  # Akan diinisialisasi di loop
-    'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+    'Random Forest': RandomForestClassifier(
+        n_estimators=100,
+        max_depth=20,
+        min_samples_split=5,
+        min_samples_leaf=2,
+        random_state=42,
+        n_jobs=-1
+    ),
+    'Logistic Regression': LogisticRegression(
+        random_state=42,
+        max_iter=1000,
+        C=1.0
+    ),
+    'SVM (RBF Kernel)': SVC(
+        kernel='rbf',
+        C=1.0,
+        gamma='scale',
+        random_state=42,
+        probability=True
+    )
 }
 
-# Coba import XGBoost
-try:
-    from xgboost import XGBClassifier
-    models['XGBoost'] = XGBClassifier(random_state=42, eval_metric='logloss')
-    use_xgb = True
-except ImportError:
-    print("     [!] XGBoost tidak tersedia, di-skip")
-    models.pop('XGBoost')
-    use_xgb = False
+for name in models.keys():
+    print(f"  - {name}")
 
-results = []
-detailed_results = []
+# Training semua model
+print("\nTraining semua model...")
+print("-"*70)
 
-for name, model in models.items():
-    print(f"\n[{len(results)+1}/{len(models)}] Training {name}...")
+results = {}
+training_times = {}
 
-    if model is None:
-        continue
+for model_name, model in models.items():
+    print(f"\n[TRAINING] {model_name}...")
 
-    try:
-        # Training
-        start_time = time.time()
-        model.fit(X_train_tfidf, y_train)
-        train_time = time.time() - start_time
+    # Hitung waktu training
+    start_time = time.time()
 
-        # Prediction
-        start_time = time.time()
-        y_pred = model.predict(X_test_tfidf)
-        pred_time = time.time() - start_time
+    model.fit(X_train_tfidf, y_train)
 
-        # Metrics
-        accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred, average='weighted')
-        recall = recall_score(y_test, y_pred, average='weighted')
-        f1 = f1_score(y_test, y_pred, average='weighted')
+    training_time = time.time() - start_time
+    training_times[model_name] = training_time
 
-        # Confusion Matrix
-        cm = confusion_matrix(y_test, y_pred)
-        tn, fp, fn, tp = cm.ravel()
+    # Prediksi
+    y_pred = model.predict(X_test_tfidf)
 
-        # Sensitivity & Specificity
-        sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0  # Recall AI
-        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0  # Recall Human
+    # Ambil probabilitas kalau ada
+    y_proba = model.predict_proba(X_test_tfidf) if hasattr(model, 'predict_proba') else None
 
-        results.append({
-            'Model': name,
-            'Accuracy': accuracy,
-            'Precision': precision,
-            'Recall': recall,
-            'F1-Score': f1
-        })
+    # Hitung metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, average='weighted')
+    recall = recall_score(y_test, y_pred, average='weighted')
+    f1 = f1_score(y_test, y_pred, average='weighted')
 
-        detailed_results.append({
-            'Model': name,
-            'Accuracy': accuracy,
-            'Precision': precision,
-            'Recall': recall,
-            'F1-Score': f1,
-            'Sensitivity (AI)': sensitivity,
-            'Specificity (Human)': specificity,
-            'TP': tp,
-            'TN': tn,
-            'FP': fp,
-            'FN': fn,
-            'Train Time (s)': train_time,
-            'Predict Time (s)': pred_time
-        })
+    # Confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
 
-        print(f"     Accuracy: {accuracy*100:.2f}%")
-        print(f"     F1-Score: {f1*100:.2f}%")
-        print(f"     Train Time: {train_time:.2f}s")
+    # Simpen hasil
+    results[model_name] = {
+        'model': model,
+        'accuracy': accuracy,
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1,
+        'confusion_matrix': cm,
+        'training_time': training_time,
+        'predictions': y_pred,
+        'probabilities': y_proba
+    }
 
-    except Exception as e:
-        print(f"     [X] Error: {e}")
-        continue
+    print(f"   [OK] Selesai! ({training_time:.2f} detik)")
+    print(f"   Akurasi: {accuracy*100:.2f}%")
 
-# Hasil perbandingan
+# Tampilkan hasil perbandingan
 print("\n" + "="*70)
 print("HASIL PERBANDINGAN MODEL")
-print("="*70)
 
-results_df = pd.DataFrame(results)
-results_df = results_df.sort_values('Accuracy', ascending=False)
+comparison_data = []
+for model_name, result in results.items():
+    comparison_data.append({
+        'Model': model_name,
+        'Akurasi (%)': f"{result['accuracy']*100:.2f}",
+        'Precision': f"{result['precision']:.4f}",
+        'Recall': f"{result['recall']:.4f}",
+        'F1-Score': f"{result['f1_score']:.4f}",
+        'Training Time (s)': f"{result['training_time']:.2f}"
+    })
 
-print("\nPeringkat Model berdasarkan Accuracy:")
-print("-"*70)
-for i, row in results_df.iterrows():
-    print(f"{row['Accuracy']*100:5.2f}%  -  {row['Model']}")
+df_comparison = pd.DataFrame(comparison_data)
+print("\n" + df_comparison.to_string(index=False))
 
-# Tabel lengkap
-print("\n" + "-"*70)
-print("TABEL LENGKAP PERBANDINGAN MODEL")
-print("-"*70)
+# Pilih model terbaik
+best_model_name = max(results.keys(), key=lambda k: results[k]['accuracy'])
+best_accuracy = results[best_model_name]['accuracy']
 
-comparison_df = pd.DataFrame(detailed_results)
-comparison_df = comparison_df.sort_values('Accuracy', ascending=False)
+print(f"\n[BEST MODEL] {best_model_name}")
+print(f"   Akurasi: {best_accuracy*100:.2f}%")
 
-# Format untuk display
-display_cols = ['Model', 'Accuracy', 'Precision', 'Recall', 'F1-Score',
-                'Sensitivity (AI)', 'Specificity (Human)']
-display_df = comparison_df[display_cols].copy()
-
-for col in ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'Sensitivity (AI)', 'Specificity (Human)']:
-    display_df[col] = display_df[col].apply(lambda x: f"{x*100:.2f}%")
-
-print(display_df.to_string(index=False))
-
-# Visualisasi comparison
+# Tampilkan confusion matrix detail
 print("\n" + "="*70)
-print("STATISTIK PERBANDINGAN")
-print("="*70)
+print("CONFUSION MATRIX DETAIL")
 
-print(f"\nTotal Model: {len(results_df)}")
-print(f"Accuracy Tertinggi: {results_df['Accuracy'].max()*100:.2f}% ({results_df.iloc[0]['Model']})")
-print(f"Accuracy Terendah: {results_df['Accuracy'].min()*100:.2f}% ({results_df.iloc[-1]['Model']})")
-print(f"Rata-rata Accuracy: {results_df['Accuracy'].mean()*100:.2f}%")
-print(f"Std Deviation: {results_df['Accuracy'].std()*100:.2f}%")
+for model_name, result in results.items():
+    cm = result['confusion_matrix']
+    print(f"\n{model_name}:")
+    print(f"{'':15}{'Prediksi':>20}")
+    print(f"{'':15}{'MANUSIA':>10}{'AI':>10}")
+    print(f"{'Aktual MANUSIA':>15}{cm[0][0]:>10}{cm[0][1]:>10}")
+    print(f"{'Aktual AI':>15}{cm[1][0]:>10}{cm[1][1]:>10}")
 
-# Top 3 models
-print("\n" + "-"*70)
-print("TOP 3 MODEL TERBAIK")
+# Tampilkan classification report detail
+print("\n" + "="*70)
+print("CLASSIFICATION REPORT (DETAIL)")
+
+for model_name, result in results.items():
+    print(f"\n{'='*70}")
+    print(f"{model_name}")
+    print('='*70)
+    print(classification_report(
+        y_test, result['predictions'],
+        target_names=['MANUSIA', 'AI'],
+        digits=4
+    ))
+
+# Simpen semua model
+print("\n" + "="*70)
+print("MENYIMPAN SEMUA MODEL")
+
+models_dir = Path("models_comparison")
+models_dir.mkdir(exist_ok=True)
+
+# Simpen vectorizer
+vectorizer_file = models_dir / "vectorizer.pkl"
+joblib.dump(vectorizer, vectorizer_file)
+print(f"[OK] Vectorizer disimpan: {vectorizer_file}")
+
+# Simpen tiap model
+for model_name, result in results.items():
+    safe_name = model_name.lower().replace(' ', '_').replace('(', '').replace(')', '')
+    model_file = models_dir / f"{safe_name}.pkl"
+
+    joblib.dump(result['model'], model_file)
+    print(f"[OK] {model_name} disimpan: {model_file}")
+
+# Simpen hasil perbandingan
+df_comparison.to_csv(models_dir / "comparison_results.csv", index=False)
+print(f"[OK] Hasil perbandingan disimpan: {models_dir / 'comparison_results.csv'}")
+
+# Simpen label mapping
+mapping_file = models_dir / "label_mapping.txt"
+with open(mapping_file, 'w') as f:
+    f.write("Label Mapping:\n")
+    f.write("MANUSIA -> 0\n")
+    f.write("AI -> 1\n")
+print(f"[OK] Label mapping disimpan: {mapping_file}")
+
+# Tampilkan ringkasan
+print("\n" + "="*70)
+print("SUMMARY")
+
+print(f"\n{'Model':<25} {'Akurasi':<12} {'F1-Score':<12} {'Time (s)':<12}")
 print("-"*70)
 
-top3 = comparison_df.head(3)
-for i, (idx, row) in enumerate(top3.iterrows(), 1):
-    print(f"\n#{i} {row['Model']}")
-    print(f"   Accuracy:    {row['Accuracy']*100:.2f}%")
-    print(f"   F1-Score:    {row['F1-Score']*100:.2f}%")
-    print(f"   Sensitivity: {row['Sensitivity (AI)']*100:.2f}% (AI Detection)")
-    print(f"   Specificity: {row['Specificity (Human)']*100:.2f}% (Human Detection)")
-    print(f"   TP: {int(row['TP'])}, TN: {int(row['TN'])}, FP: {int(row['FP'])}, FN: {int(row['FN'])}")
+sorted_results = sorted(results.items(), key=lambda x: x[1]['accuracy'], reverse=True)
 
-# Perbandingan training time
-print("\n" + "-"*70)
-print("PERBANDINGAN WAKTU TRAINING & PREDICTION")
-print("-"*70)
-
-time_df = comparison_df[['Model', 'Train Time (s)', 'Predict Time (s)']].copy()
-time_df = time_df.sort_values('Train Time (s)')
-print(time_df.to_string(index=False))
-
-# Export results
-print("\n" + "="*70)
-print("EXPORT HASIL PERBANDINGAN")
-print("="*70)
-
-# Full results
-comparison_df.to_csv('model_comparison_results.csv', index=False, encoding='utf-8')
-print("     [OK] Full results: model_comparison_results.csv")
-
-# Summary for thesis
-summary_df = comparison_df[['Model', 'Accuracy', 'Precision', 'Recall', 'F1-Score']].copy()
-summary_df = summary_df.sort_values('Accuracy', ascending=False)
-summary_df.to_csv('model_comparison_summary.csv', index=False, encoding='utf-8')
-print("     [OK] Summary: model_comparison_summary.csv")
-
-# Rekomendasi
-print("\n" + "="*70)
-print("REKOMENDASI MODEL")
-print("="*70)
-
-best_model = comparison_df.iloc[0]
-print(f"\nModel Terbaik: {best_model['Model']}")
-print(f"  - Accuracy: {best_model['Accuracy']*100:.2f}%")
-print(f"  - F1-Score: {best_model['F1-Score']*100:.2f}%")
-print(f"  - Sensitivity (AI Detection): {best_model['Sensitivity (AI)']*100:.2f}%")
-print(f"  - Waktu Training: {best_model['Train Time (s)']:.2f} detik")
-
-if best_model['Sensitivity (AI)'] >= 0.99:
-    print("\n  [+] SANGAT BAIK untuk mendeteksi AI (>99%)")
-if best_model['Specificity (Human)'] >= 0.95:
-    print("  [+] SANGAT BAIK untuk mendeteksi Manusia (>95%)")
-if best_model['Train Time (s)'] < 5:
-    print("  [+] Cepat dalam training")
+for model_name, result in sorted_results:
+    print(f"{model_name:<25} {result['accuracy']*100:>10.2f}%  "
+          f"{result['f1_score']:>10.4f}  {result['training_time']:>10.2f}")
 
 print("\n" + "="*70)
-print("PERBANDINGAN MODEL SELESAI!")
-print("="*70)
-
-# Print untuk skripsi
-print("\n" + "="*70)
-print("FORMAT UNTUK SKRIPSI")
-print("="*70)
-
-print("\nTabel Perbandingan Model:")
-print("-"*70)
-print("| No | Model | Accuracy | Precision | Recall | F1-Score |")
-print("|----|-------|----------|-----------|--------|----------|")
-
-for i, (idx, row) in enumerate(comparison_df.iterrows(), 1):
-    print(f"| {i} | {row['Model']:<20} | {row['Accuracy']*100:>6.2f}% | {row['Precision']*100:>9.2f}% | {row['Recall']*100:>6.2f}% | {row['F1-Score']*100:>8.2f}% |")
-
-print("-"*70)
+print(f"REKOMENDASI: Gunakan {best_model_name} untuk produksi")
+print(f"Alasan: Akurasi tertinggi ({best_accuracy*100:.2f}%)")

@@ -1,8 +1,4 @@
-"""
-Cross-Validation untuk validasi model lebih kuat
-10-Fold Stratified Cross-Validation
-"""
-
+# Import library yang diperlukan
 import pandas as pd
 import numpy as np
 import joblib
@@ -12,34 +8,33 @@ from sklearn.ensemble import RandomForestClassifier
 import warnings
 warnings.filterwarnings('ignore')
 
-print("="*70)
 print("CROSS-VALIDATION - RANDOM FOREST MODEL (10-FOLD)")
-print("="*70)
 
-# Load dataset
-print("\n[1] Load dataset...")
+# Load dataset dulu
+print("\nLoad dataset...")
 df = pd.read_csv("dataset_final_1500.csv", encoding='utf-8')
 df = df.dropna()
 print(f"     Total data: {len(df)}")
 
-# Preprocessing
-print("\n[2] Preprocessing...")
+# Preprocessing label
+print("\nPreprocessing...")
 label_mapping = {'MANUSIA': 0, 'AI': 1}
 df['label_num'] = df['label'].map(label_mapping)
 
+# Siapin X dan y
 X = df['text']
 y = df['label_num']
 
-# Split untuk final validation
-print("\n[3] Split data (80% train untuk CV, 20% test untuk final)...")
+# Split data (80% train untuk CV, 20% test untuk final)
+print("\nSplit data (80% train untuk CV, 20% test untuk final)...")
 X_train_full, X_test, y_train_full, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 print(f"     Training (untuk CV): {len(X_train_full)}")
 print(f"     Testing (final): {len(X_test)}")
 
-# TF-IDF pada full training
-print("\n[4] TF-IDF Vectorization...")
+# TF-IDF Vectorization
+print("\nTF-IDF Vectorization...")
 vectorizer = TfidfVectorizer(
     max_features=5000,
     min_df=2,
@@ -47,22 +42,24 @@ vectorizer = TfidfVectorizer(
     ngram_range=(1, 2)
 )
 
+# Fit ke training data
 X_train_tfidf = vectorizer.fit_transform(X_train_full)
 X_test_tfidf = vectorizer.transform(X_test)
 print(f"     Features: {X_train_tfidf.shape[1]}")
 
-# Load trained model
-print("\n[5] Load trained model...")
+# Load model yang sudah dilatih
+print("\nLoad trained model...")
 model = joblib.load('models/random_forest_model.pkl')
 print("     [OK] Model loaded!")
 
-# 10-Fold Cross-Validation
+# Mulai 10-Fold Stratified Cross-Validation
 print("\n" + "="*70)
 print("10-FOLD STRATIFIED CROSS-VALIDATION")
-print("="*70)
 
+# Setup Stratified KFold
 cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
+# Lakukan cross-validation
 print("\nMelakukan cross-validation...")
 cv_scores = cross_val_score(
     model, X_train_tfidf, y_train_full,
@@ -72,7 +69,7 @@ cv_scores = cross_val_score(
     verbose=1
 )
 
-# Hasil Cross-Validation
+# Tampilkan hasil cross-validation
 print("\n" + "-"*70)
 print("HASIL CROSS-VALIDATION")
 print("-"*70)
@@ -95,6 +92,7 @@ print("-"*70)
 cv_mean = cv_scores.mean()
 cv_std = cv_scores.std()
 
+# Cek stabilitas model
 print(f"\nStabilitas Model: ", end="")
 if cv_std < 0.01:
     print("SANGAT STABIL (std < 1%)")
@@ -105,34 +103,36 @@ elif cv_std < 0.03:
 else:
     print("Kurang Stabil (std >= 3%)")
 
+# Cek konsistensi
 print(f"\nKonsistensi: ", end="")
 if cv_std / cv_mean < 0.02:
     print("SANGAT KONSISTEN")
 elif cv_std / cv_mean < 0.05:
-    print="KONSISTEN"
+    print("KONSISTEN")
 else:
     print("KURANG KONSISTEN")
 
-# Final test evaluation
+# Evaluasi final di test set
 print("\n" + "="*70)
 print("EVALUASI FINAL PADA TEST SET (20%)")
-print("="*70)
 
+# Import metrics yang diperlukan
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
+# Prediksi test set
 y_pred = model.predict(X_test_tfidf)
 test_accuracy = accuracy_score(y_test, y_pred)
 
 print(f"\nTest Set Accuracy: {test_accuracy*100:.2f}%")
 
-# Comparison
+# Bandingin CV vs Test
 print("\n" + "="*70)
-print("PERBANDINGAN: CV vs TEST SET")
-print("="*70)
+print("PERBANDINGAN: CV VS TEST SET")
 
 print(f"\nCross-Validation Mean: {cv_scores.mean()*100:.2f}% (±{cv_scores.std()*100:.2f}%)")
 print(f"Test Set Accuracy:     {test_accuracy*100:.2f}%")
 
+# Hitung selisih
 diff = abs(cv_scores.mean() - test_accuracy)
 print(f"\nSelisih: {diff*100:.2f}%")
 
@@ -145,13 +145,13 @@ elif diff < 0.05:
 else:
     print("Status: PERLU PERHATIAN - Perbedaan cukup besar")
 
-# Detailed classification report
+# Tampilkan classification report
 print("\n" + "-"*70)
 print("CLASSIFICATION REPORT (TEST SET)")
 print("-"*70)
 print(classification_report(y_test, y_pred, target_names=['Manusia (0)', 'AI (1)']))
 
-# Confusion Matrix
+# Tampilkan confusion matrix
 print("\n" + "-"*70)
 print("CONFUSION MATRIX (TEST SET)")
 print("-"*70)
@@ -161,10 +161,10 @@ print(f"\n                Predicted: 0    Predicted: 1")
 print(f"Actual: 0        {cm[0][0]:<6}       {cm[0][1]:<6}")
 print(f"Actual: 1        {cm[1][0]:<6}       {cm[1][1]:<6}")
 
-# Calculate metrics
+# Hitung metrics tambahan
 tn, fp, fn, tp = cm.ravel()
-sensitivity = tp / (tp + fn)  # True Positive Rate (Recall for AI)
-specificity = tn / (tn + fp)  # True Negative Rate (Recall for Human)
+sensitivity = tp / (tp + fn)
+specificity = tn / (tn + fp)
 precision = tp / (tp + fp) if (tp + fp) > 0 else 0
 f1_score = 2 * (precision * sensitivity) / (precision + sensitivity) if (precision + sensitivity) > 0 else 0
 
@@ -173,10 +173,9 @@ print(f"Specificity (Recall Human): {specificity*100:.2f}%")
 print(f"Precision:                  {precision*100:.2f}%")
 print(f"F1-Score:                   {f1_score*100:.2f}%")
 
-# Summary
+# Ringkasan validasi model
 print("\n" + "="*70)
 print("RINGKASAN VALIDASI MODEL")
-print("="*70)
 
 print(f"""
 Model Random Forest dengan TF-IDF telah divalidasi menggunakan:
@@ -196,7 +195,3 @@ Kesimpulan:
 - Perbedaan CV vs Test: {diff*100:.2f}% ({'SANGAT BAIK' if diff < 0.01 else 'BAIK' if diff < 0.02 else 'Cukup'})
 - Model siap digunakan untuk production
 """)
-
-print("="*70)
-print("CROSS-VALIDATION SELESAI!")
-print("="*70)

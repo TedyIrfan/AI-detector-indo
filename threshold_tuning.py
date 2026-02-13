@@ -1,10 +1,3 @@
-"""
-Threshold Tuning Analysis untuk optimasi trade-off Precision vs Recall
-- Menganalisis berbagai threshold untuk klasifikasi
-- Fokus mengurangi False Negative (AI yang lolos sebagai MANUSIA)
-- Visualisasi dan rekomendasi threshold optimal
-"""
-
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -23,52 +16,40 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-# Optional: matplotlib for visualization
-try:
+try:  # Optional: matplotlib for visualization
     import matplotlib.pyplot as plt
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
     print("Note: matplotlib not found, skipping plots")
 
-print("="*70)
-print("THRESHOLD TUNING ANALYSIS")
-print("="*70)
-
-# =====================================================
-# LANGKAH 1: LOAD DATA
-# =====================================================
-print("\n[1] Load dataset...")
-df = pd.read_csv("dataset_final_1500.csv", encoding='utf-8')
+print("Threshold Tuning Analysis")
+print("\nLoad dataset...")
+df = pd.read_csv("dataset_final_1500.csv", encoding='utf-8')  # Load dataset
 df = df.dropna(subset=['text', 'label'])
 print(f"    Total data: {len(df)}")
 
-# Preprocessing
-label_mapping = {'MANUSIA': 0, 'AI': 1}
+label_mapping = {'MANUSIA': 0, 'AI': 1}  # Preprocessing
 df['label_num'] = df['label'].map(label_mapping)
 
 X = df['text'].values
 y = df['label_num'].values
 
-# Split data
-print("\n[2] Split data (80% train, 20% test)...")
+print("Split data (80% train, 20% test)...")
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
-)
+)  # Split data
 print(f"    Training: {len(X_train)}")
 print(f"    Testing: {len(X_test)}")
 
-# =====================================================
-# LANGKAH 2: TRAIN MODELS
-# =====================================================
-print("\n[3] Training models...")
+print("\nTraining models...")  # Train 3 models: RF, Logistic Regression, SVM
 
 tfidf_params = {
     'max_features': 5000,
     'ngram_range': (1, 2),
     'min_df': 2,
     'max_df': 0.8
-}
+}  # TF-IDF parameters
 
 pipelines = {
     'Random Forest': Pipeline([
@@ -87,49 +68,36 @@ pipelines = {
     ])
 }
 
-# Train all models
-for name, pipeline in pipelines.items():
+for name, pipeline in pipelines.items():  # Train all models
     print(f"    Training {name}...")
-    pipeline.fit(X_train, y_train)
+    pipeline.fit(X_train, y_train)  # Train each model
 
-# =====================================================
-# LANGKAH 3: THRESHOLD ANALYSIS
-# =====================================================
-print("\n" + "="*70)
-print("[4] THRESHOLD ANALYSIS")
-print("="*70)
+print("\nThreshold Analysis")
 
-# Range of thresholds to analyze
-thresholds = np.arange(0.3, 0.75, 0.05)
+thresholds = np.arange(0.3, 0.75, 0.05)  # Test thresholds from 0.3 to 0.75
 
 all_results = {}
 
 for name, pipeline in pipelines.items():
-    print(f"\n{'='*60}")
-    print(f"Model: {name}")
-    print(f"{'='*60}")
+    print(f"\nModel: {name}")
 
-    # Get probabilities
-    y_proba = pipeline.predict_proba(X_test)
-    y_proba_ai = y_proba[:, 1]  # Probability of AI class
+    y_proba = pipeline.predict_proba(X_test)  # Get probabilities
+    y_proba_ai = y_proba[:, 1]
 
     results = []
 
-    print(f"\n{'Threshold':<12} {'Accuracy':<12} {'Precision':<12} {'Recall':<12} {'F1':<12} {'FNR':<12}")
+    print(f"{'Threshold':<12} {'Accuracy':<12} {'Precision':<12} {'Recall':<12} {'F1':<12} {'FNR':<12}")
     print("-"*72)
 
     for thresh in thresholds:
-        # Apply threshold
-        y_pred_thresh = (y_proba_ai >= thresh).astype(int)
+        y_pred_thresh = (y_proba_ai >= thresh).astype(int)  # Apply threshold
 
-        # Calculate metrics
         acc = accuracy_score(y_test, y_pred_thresh)
         prec = precision_score(y_test, y_pred_thresh, zero_division=0)
         rec = recall_score(y_test, y_pred_thresh, zero_division=0)
         f1 = f1_score(y_test, y_pred_thresh, zero_division=0)
 
-        # Confusion matrix for FNR
-        cm = confusion_matrix(y_test, y_pred_thresh)
+        cm = confusion_matrix(y_test, y_pred_thresh)  # Confusion matrix
         tn, fp, fn, tp = cm.ravel()
         fnr = fn / (fn + tp) if (fn + tp) > 0 else 0  # False Negative Rate
 
@@ -150,36 +118,27 @@ for name, pipeline in pipelines.items():
 
     all_results[name] = results
 
-    # Find optimal threshold (balance F1 and low FNR)
-    # Weight: minimize FNR, maximize F1
     best_idx = max(range(len(results)),
                    key=lambda i: results[i]['f1'] * (1 - results[i]['fnr']))
     best_thresh = results[best_idx]['threshold']
 
-    print(f"\nRekomendasi Threshold: {best_thresh:.2f}")
+    print(f"Rekomendasi Threshold: {best_thresh:.2f}")
     print(f"  - F1-Score: {results[best_idx]['f1']*100:.2f}%")
     print(f"  - Recall:   {results[best_idx]['recall']*100:.2f}%")
     print(f"  - FNR:      {results[best_idx]['fnr']*100:.2f}%")
     print(f"  - FN count: {results[best_idx]['fn']} (AI yang lolos sebagai MANUSIA)")
 
-# =====================================================
-# LANGKAH 4: DETAILED ANALYSIS FOR BEST MODEL
-# =====================================================
-print("\n" + "="*70)
-print("[5] DETAILED ANALYSIS - BEST MODEL SELECTION")
-print("="*70)
+print("\nDetailed Analysis - Best Model Selection")
 
-# Select model with best default performance
 best_model_name = max(pipelines.keys(),
-                      key=lambda n: accuracy_score(y_test, pipelines[n].predict(X_test)))
+                      key=lambda n: accuracy_score(y_test, pipelines[n].predict(X_test)))  # Select best model
 print(f"\nBest performing model: {best_model_name}")
 
 pipeline = pipelines[best_model_name]
 y_proba = pipeline.predict_proba(X_test)
 y_proba_ai = y_proba[:, 1]
 
-# Fine-grained threshold search
-fine_thresholds = np.arange(0.40, 0.65, 0.01)
+fine_thresholds = np.arange(0.40, 0.65, 0.01)  # Fine-grained search
 fine_results = []
 
 print(f"\nFine-grained threshold search for {best_model_name}:")
@@ -208,26 +167,18 @@ for thresh in fine_thresholds:
         'fn': int(fn)
     })
 
-    # Highlight recommended thresholds
     marker = " <-- RECOMMENDED" if 0.55 <= thresh <= 0.65 and fnr <= 0.05 else ""
     print(f"{thresh:<12.2f} {acc*100:>8.2f}%    {prec*100:>8.2f}%    {rec*100:>8.2f}%    {f1*100:>8.2f}%    {fnr*100:>8.2f}%{marker}")
 
-# =====================================================
-# LANGKAH 5: VISUALIZATION
-# =====================================================
 if HAS_MATPLOTLIB:
-    print("\n" + "="*70)
-    print("[6] GENERATING VISUALIZATIONS")
-    print("="*70)
+    print("\nGenerating Visualizations")
 
     os.makedirs('visualizations', exist_ok=True)
 
-    # Plot 1: Threshold vs Metrics for all models
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))  # Plot 1: Threshold vs Metrics
 
     colors = {'Random Forest': 'blue', 'Logistic Regression': 'green', 'SVM': 'red'}
 
-    # Plot metrics for each model
     for name, results in all_results.items():
         thresh_list = [r['threshold'] for r in results]
         acc_list = [r['accuracy'] for r in results]
@@ -270,8 +221,7 @@ if HAS_MATPLOTLIB:
     print("    Saved: visualizations/threshold_metrics_comparison.png")
     plt.close()
 
-    # Plot 2: FNR Analysis
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))  # Plot 2: FNR Analysis
 
     for name, results in all_results.items():
         thresh_list = [r['threshold'] for r in results]
@@ -293,8 +243,7 @@ if HAS_MATPLOTLIB:
     print("    Saved: visualizations/fnr_analysis.png")
     plt.close()
 
-    # Plot 3: ROC Curve
-    fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 8))  # Plot 3: ROC Curve
 
     for name, pipeline in pipelines.items():
         y_proba = pipeline.predict_proba(X_test)
@@ -314,17 +263,11 @@ if HAS_MATPLOTLIB:
     print("    Saved: visualizations/roc_curve.png")
     plt.close()
 
-# =====================================================
-# LANGKAH 6: SAVE RESULTS
-# =====================================================
-print("\n" + "="*70)
-print("[7] SAVING THRESHOLD ANALYSIS RESULTS")
-print("="*70)
+print("\nSaving Threshold Analysis Results")
 
 os.makedirs('models_strict', exist_ok=True)
 
-# Convert to JSON-serializable format
-threshold_analysis = {
+threshold_analysis = {  # Convert to JSON format
     'analysis_date': pd.Timestamp.now().isoformat(),
     'dataset_size': len(df),
     'test_size': len(X_test),
@@ -338,8 +281,7 @@ for name, results in all_results.items():
         'optimal_threshold': max(results, key=lambda r: r['f1'] * (1 - r['fnr']))['threshold']
     }
 
-# Add recommendations
-threshold_analysis['recommendations'] = {
+threshold_analysis['recommendations'] = {  # Add recommendations
     'default_threshold': 0.5,
     'conservative_threshold': 0.60,  # Lower FNR
     'balanced_threshold': 0.55,       # Balance F1 and FNR
@@ -355,12 +297,7 @@ with open('models_strict/threshold_analysis.json', 'w') as f:
 
 print("    Saved: models_strict/threshold_analysis.json")
 
-# =====================================================
-# LANGKAH 7: FINAL RECOMMENDATIONS
-# =====================================================
-print("\n" + "="*70)
-print("REKOMENDASI THRESHOLD")
-print("="*70)
+print("\nRekomendasi Threshold")  # Final recommendations
 
 print("""
 Berdasarkan analisis threshold tuning:
@@ -390,22 +327,18 @@ CONTOH PENGGUNAAN:
     y_pred = (y_proba[:, 1] >= 0.55).astype(int)
 """)
 
-# Calculate impact of using recommended threshold
-print("\n" + "="*70)
-print("DAMPAK PENGGUNAAN THRESHOLD 0.55 vs 0.5")
-print("="*70)
+print("\nDampak Penggunaan Threshold 0.55 vs 0.5")  # Calculate impact
 
 best_results = all_results[best_model_name]
 
-# Use tolerance for float comparison
-def find_threshold_result(results, target_threshold, tolerance=0.01):
+def find_threshold_result(results, target_threshold, tolerance=0.01):  # Use tolerance for float comparison
     for r in results:
         if abs(r['threshold'] - target_threshold) < tolerance:
             return r
-    return results[0]  # Fallback to first result
+    return results[0]
 
 default_result = find_threshold_result(best_results, 0.5)
-recommended_result = find_threshold_result(best_results, 0.55)
+recommended_result = find_threshold_result(best_results, 0.55)  # Compare 0.5 vs 0.55
 
 print(f"\nModel: {best_model_name}")
 print(f"\n{'Metric':<20} {'Threshold 0.5':<20} {'Threshold 0.55':<20} {'Change':<15}")
@@ -417,6 +350,4 @@ print(f"{'F1-Score':<20} {default_result['f1']*100:>10.2f}%      {recommended_re
 print(f"{'FNR':<20} {default_result['fnr']*100:>10.2f}%      {recommended_result['fnr']*100:>10.2f}%      {(recommended_result['fnr']-default_result['fnr'])*100:>+6.2f}%")
 print(f"{'False Negatives':<20} {default_result['fn']:>10}         {recommended_result['fn']:>10}         {recommended_result['fn']-default_result['fn']:>+6}")
 
-print("\n" + "="*70)
-print("THRESHOLD TUNING SELESAI!")
-print("="*70)
+print("\nThreshold Tuning Selesai!")

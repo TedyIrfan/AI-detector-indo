@@ -1,8 +1,3 @@
-"""
-Visualisasi Tambahan untuk Skripsi
-Learning Curve, ROC Curve, Precision-Recall Curve, dll
-"""
-
 import pandas as pd
 import numpy as np
 import joblib
@@ -18,16 +13,12 @@ from sklearn.metrics import (
 import warnings
 warnings.filterwarnings('ignore')
 
-# Set style
 plt.style.use('seaborn-v0_8-whitegrid')
 sns.set_palette("husl")
 
-print("="*70)
 print("VISUALISASI TAMBAHAN UNTUK SKRIPSI")
-print("="*70)
 
-# Load dataset
-print("\n[1] Load dataset...")
+print("\nLoad dataset...")
 df = pd.read_csv("dataset_final_1500.csv", encoding='utf-8')
 df = df.dropna()
 
@@ -37,15 +28,13 @@ df['label_num'] = df['label'].map(label_mapping)
 X = df['text']
 y = df['label_num']
 
-# Split
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
 print(f"     Training: {len(X_train)}, Testing: {len(X_test)}")
 
-# TF-IDF
-print("\n[2] TF-IDF Vectorization...")
+print("\nTF-IDF Vectorization...")
 vectorizer = TfidfVectorizer(
     max_features=5000,
     min_df=2,
@@ -56,14 +45,10 @@ vectorizer = TfidfVectorizer(
 X_train_tfidf = vectorizer.fit_transform(X_train)
 X_test_tfidf = vectorizer.transform(X_test)
 
-# Load model
-print("\n[3] Load model...")
+print("\nLoad model...")
 model = joblib.load('models/random_forest_model.pkl')
 
-# =====================================================
-# 1. LEARNING CURVE
-# =====================================================
-print("\n[4] Generating Learning Curve...")
+print("\nGenerating Learning Curve...")
 
 train_sizes, train_scores, test_scores = learning_curve(
     model, X_train_tfidf, y_train,
@@ -100,18 +85,7 @@ plt.savefig('learning_curve.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("     [OK] Saved: learning_curve.png")
 
-# Print learning curve values
-print("\n     Learning Curve Values:")
-print(f"     {'Size':<10} {'Train':<12} {'Test':<12} {'Gap':<10}")
-print("     " + "-"*45)
-for i, size in enumerate(train_sizes):
-    gap = train_mean[i] - test_mean[i]
-    print(f"     {int(size):<10} {train_mean[i]*100:>11.2f}% {test_mean[i]*100:>11.2f}% {gap*100:>9.2f}%")
-
-# =====================================================
-# 2. ROC CURVE
-# =====================================================
-print("\n[5] Generating ROC Curve...")
+print("\nGenerating ROC Curve...")
 
 y_pred_proba = model.predict_proba(X_test_tfidf)
 
@@ -125,7 +99,6 @@ ax.plot([0, 1], [0, 1], color='red', linestyle='--', linewidth=2, label='Random 
 
 ax.fill_between(fpr, tpr, alpha=0.2, color='blue')
 
-# Highlight specific points
 idx_50 = np.argmin(np.abs(tpr - 0.5))
 ax.plot(fpr[idx_50], tpr[idx_50], 'ro', markersize=8, label=f'TPR=50%: FPR={fpr[idx_50]:.3f}')
 
@@ -147,10 +120,7 @@ print("     [OK] Saved: roc_curve.png")
 
 print(f"\n     ROC AUC: {roc_auc:.4f} ({roc_auc*100:.2f}%)")
 
-# =====================================================
-# 3. PRECISION-RECALL CURVE
-# =====================================================
-print("\n[6] Generating Precision-Recall Curve...")
+print("\nGenerating Precision-Recall Curve...")
 
 precision, recall, _ = precision_recall_curve(y_test, y_pred_proba[:, 1])
 ap_score = average_precision_score(y_test, y_pred_proba[:, 1])
@@ -159,7 +129,6 @@ fig, ax = plt.subplots(figsize=(10, 8))
 
 ax.plot(recall, precision, color='blue', linewidth=3, label=f'PR Curve (AP = {ap_score:.4f})')
 
-# Baseline (random classifier)
 baseline = len(y_test[y_test == 1]) / len(y_test)
 ax.axhline(y=baseline, color='red', linestyle='--', linewidth=2, label=f'Baseline (random): {baseline:.3f}')
 
@@ -180,10 +149,7 @@ print("     [OK] Saved: precision_recall_curve.png")
 
 print(f"\n     Average Precision Score: {ap_score:.4f} ({ap_score*100:.2f}%)")
 
-# =====================================================
-# 4. CONFUSION MATRIX HEATMAP
-# =====================================================
-print("\n[7] Generating Confusion Matrix Heatmap...")
+print("\nGenerating Confusion Matrix Heatmap...")
 
 y_pred = model.predict(X_test_tfidf)
 cm = confusion_matrix(y_test, y_pred)
@@ -199,7 +165,6 @@ ax.set_xlabel('Predicted Label', fontsize=12, fontweight='bold')
 ax.set_ylabel('True Label', fontsize=12, fontweight='bold')
 ax.set_title('Confusion Matrix - Random Forest', fontsize=14, fontweight='bold')
 
-# Add metrics
 tn, fp, fn, tp = cm.ravel()
 accuracy = (tp + tn) / (tp + tn + fp + fn)
 precision = tp / (tp + fp) if (tp + fp) > 0 else 0
@@ -216,20 +181,11 @@ plt.savefig('confusion_matrix_heatmap.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("     [OK] Saved: confusion_matrix_heatmap.png")
 
-print(f"\n     Confusion Matrix:")
-print(f"                 Predicted: Manusia  Predicted: AI")
-print(f"     Actual: Manusia        {tn:<6}           {fp:<6}")
-print(f"     Actual: AI             {fn:<6}           {tp:<6}")
-
-# =====================================================
-# 5. FEATURE IMPORTANCE TOP 20
-# =====================================================
-print("\n[8] Generating Feature Importance Plot...")
+print("\nGenerating Feature Importance Plot...")
 
 feature_names = vectorizer.get_feature_names_out()
 importances = model.feature_importances_
 
-# Get top 20
 top_indices = np.argsort(importances)[-20:][::-1]
 top_features = [feature_names[i] for i in top_indices]
 top_importances = importances[top_indices]
@@ -245,7 +201,6 @@ ax.set_xlabel('Importance (%)', fontsize=12, fontweight='bold')
 ax.set_title('Top 20 Feature Importance - Random Forest', fontsize=14, fontweight='bold')
 ax.grid(axis='x', alpha=0.3)
 
-# Add value labels
 for i, (bar, imp) in enumerate(zip(bars, top_importances)):
     ax.text(imp * 100 + 0.05, i, f'{imp*100:.2f}%',
             va='center', fontsize=8)
@@ -255,17 +210,12 @@ plt.savefig('feature_importance_top20.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("     [OK] Saved: feature_importance_top20.png")
 
-# =====================================================
-# 6. MODEL COMPARISON BAR CHART
-# =====================================================
-print("\n[9] Generating Model Comparison Chart...")
+print("\nGenerating Model Comparison Chart...")
 
-# Load comparison results if exists
 try:
     comp_df = pd.read_csv('model_comparison_results.csv')
     has_comparison = True
 except:
-    # Create dummy data for visualization
     comp_df = pd.DataFrame({
         'Model': ['Logistic Regression', 'Neural Network', 'SVM RBF', 'SVM Linear',
                   'Naive Bayes', 'Random Forest', 'KNN', 'Decision Tree'],
@@ -286,7 +236,6 @@ if has_comparison:
     ax.grid(axis='x', alpha=0.3)
     ax.set_xlim([90, 101])
 
-    # Add value labels
     for bar, acc in zip(bars, comp_df['Accuracy']):
         ax.text(acc * 100 + 0.2, bar.get_y() + bar.get_height()/2,
                 f'{acc*100:.2f}%', va='center', fontsize=9)
@@ -296,14 +245,10 @@ if has_comparison:
     plt.close()
     print("     [OK] Saved: model_comparison_chart.png")
 
-# =====================================================
-# 7. PROBABILITY DISTRIBUTION
-# =====================================================
-print("\n[10] Generating Probability Distribution Plot...")
+print("\nGenerating Probability Distribution Plot...")
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-# For Human (label 0)
 human_proba = y_pred_proba[y_test == 0][:, 0]
 axes[0].hist(human_proba, bins=30, color='blue', alpha=0.7, edgecolor='black')
 axes[0].axvline(0.5, color='red', linestyle='--', linewidth=2, label='Decision Boundary')
@@ -313,7 +258,6 @@ axes[0].set_title('Probability Distribution - Human Texts', fontsize=13, fontwei
 axes[0].legend()
 axes[0].grid(alpha=0.3)
 
-# For AI (label 1)
 ai_proba = y_pred_proba[y_test == 1][:, 1]
 axes[1].hist(ai_proba, bins=30, color='red', alpha=0.7, edgecolor='black')
 axes[1].axvline(0.5, color='blue', linestyle='--', linewidth=2, label='Decision Boundary')
@@ -328,12 +272,8 @@ plt.savefig('probability_distribution.png', dpi=300, bbox_inches='tight')
 plt.close()
 print("     [OK] Saved: probability_distribution.png")
 
-# =====================================================
-# 8. CROSS-VALIDATION SCORES PLOT
-# =====================================================
-print("\n[11] Generating Cross-Validation Scores Plot...")
+print("\nGenerating Cross-Validation Scores Plot...")
 
-# Try to load CV results
 cv_scores = [0.9835, 0.9917, 0.9669, 1.0000, 0.9752, 1.0000, 1.0000, 0.9917, 0.9750, 0.9917]
 
 fig, ax = plt.subplots(figsize=(12, 6))
@@ -341,11 +281,9 @@ fig, ax = plt.subplots(figsize=(12, 6))
 folds = list(range(1, 11))
 bars = ax.bar(folds, [s*100 for s in cv_scores], color='steelblue', alpha=0.7, edgecolor='black')
 
-# Add mean line
 mean_cv = np.mean(cv_scores) * 100
 ax.axhline(mean_cv, color='red', linestyle='--', linewidth=2, label=f'Mean: {mean_cv:.2f}%')
 
-# Add value labels
 for bar, score in zip(bars, cv_scores):
     ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
             f'{score*100:.2f}%', ha='center', va='bottom', fontsize=9)
@@ -365,12 +303,8 @@ print("     [OK] Saved: cv_scores_plot.png")
 
 print(f"\n     CV Mean: {mean_cv:.2f}%, Std: {np.std(cv_scores)*100:.2f}%")
 
-# =====================================================
-# SUMMARY
-# =====================================================
 print("\n" + "="*70)
 print("VISUALISASI SELESAI!")
-print("="*70)
 
 print("\nFile yang dihasilkan:")
 print("  1. learning_curve.png           - Learning Curve")
@@ -384,4 +318,3 @@ print("  8. cv_scores_plot.png           - CV Scores")
 
 print("\n" + "="*70)
 print("SEMUA VISUALISASI SIAP UNTUK SKRIPSI!")
-print("="*70)

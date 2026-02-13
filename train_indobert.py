@@ -1,10 +1,4 @@
-"""
-IndoBERT Transformer Model untuk Deteksi AI vs Manusia
-- Fine-tuning IndoBERT (indobenchmark/indobert-base-p1)
-- Training dengan dataset Indonesia
-- Evaluasi dan perbandingan dengan model tradisional
-"""
-
+# Import library yang diperlukan
 import pandas as pd
 import numpy as np
 import os
@@ -12,7 +6,7 @@ import json
 import warnings
 warnings.filterwarnings('ignore')
 
-# Check dependencies
+# Cek apakah PyTorch dan Transformers tersedia
 try:
     import torch
     from torch.utils.data import Dataset, DataLoader
@@ -33,39 +27,34 @@ except ImportError as e:
     print("\nPlease install required packages:")
     print("  pip install torch transformers scikit-learn")
 
-print("="*70)
-print("INDOBERT TRANSFORMER MODEL - AI vs MANUSIA DETECTION")
-print("="*70)
+print("Model Transformer IndoBERT - Deteksi AI vs Manusia")
 
+# Kalau dependencies gak ada, stop di sini
 if not HAS_TRANSFORMERS:
     print("\nCannot proceed without required dependencies.")
     exit(1)
 
-# Check for GPU
+# Setup device (GPU kalau ada)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"\nUsing device: {device}")
 if device.type == 'cuda':
     print(f"GPU: {torch.cuda.get_device_name(0)}")
     print(f"Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
 
-# =====================================================
-# LANGKAH 1: LOAD DATA
-# =====================================================
-print("\n[1] Load dataset...")
+# Load dataset dulu
+print("\nLoad dataset...")
 df = pd.read_csv("dataset_final_1500.csv", encoding='utf-8')
 df = df.dropna(subset=['text', 'label'])
 print(f"    Total data: {len(df)}")
 print(f"    - MANUSIA: {(df['label'] == 'MANUSIA').sum()}")
 print(f"    - AI: {(df['label'] == 'AI').sum()}")
 
-# Preprocessing
+# Mapping label biar jadi angka
 label_mapping = {'MANUSIA': 0, 'AI': 1}
 df['label_num'] = df['label'].map(label_mapping)
 
-# =====================================================
-# LANGKAH 2: SPLIT DATA
-# =====================================================
-print("\n[2] Split data (80% train, 20% test)...")
+# Split data jadi train, test, terus validation
+print("\nSplit data (80% train, 20% test)...")
 train_texts, test_texts, train_labels, test_labels = train_test_split(
     df['text'].tolist(),
     df['label_num'].tolist(),
@@ -74,7 +63,7 @@ train_texts, test_texts, train_labels, test_labels = train_test_split(
     stratify=df['label_num']
 )
 
-# Further split train into train/val
+# Split train jadi train dan validation
 train_texts, val_texts, train_labels, val_labels = train_test_split(
     train_texts,
     train_labels,
@@ -87,19 +76,18 @@ print(f"    Training: {len(train_texts)}")
 print(f"    Validation: {len(val_texts)}")
 print(f"    Testing: {len(test_texts)}")
 
-# =====================================================
-# LANGKAH 3: TOKENIZER
-# =====================================================
-print("\n[3] Loading IndoBERT tokenizer...")
+# Load tokenizer IndoBERT
+print("\nLoading IndoBERT tokenizer...")
 
 MODEL_NAME = "indobenchmark/indobert-base-p1"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 print(f"    Model: {MODEL_NAME}")
 
-# Tokenize
+# Max length buat tokenization
 MAX_LENGTH = 512
 
-print("\n[4] Tokenizing texts...")
+# Tokenize semua text
+print("\nTokenizing texts...")
 
 train_encodings = tokenizer(
     train_texts,
@@ -125,9 +113,7 @@ test_encodings = tokenizer(
 print(f"    Max length: {MAX_LENGTH}")
 print(f"    Tokenized samples: train={len(train_encodings['input_ids'])}, val={len(val_encodings['input_ids'])}, test={len(test_encodings['input_ids'])}")
 
-# =====================================================
-# LANGKAH 4: CREATE DATASET CLASS
-# =====================================================
+# Dataset class buat PyTorch
 class IndoBERTDataset(Dataset):
     def __init__(self, encodings, labels):
         self.encodings = encodings
@@ -141,14 +127,13 @@ class IndoBERTDataset(Dataset):
     def __len__(self):
         return len(self.labels)
 
+# Buat dataset
 train_dataset = IndoBERTDataset(train_encodings, train_labels)
 val_dataset = IndoBERTDataset(val_encodings, val_labels)
 test_dataset = IndoBERTDataset(test_encodings, test_labels)
 
-# =====================================================
-# LANGKAH 5: LOAD MODEL
-# =====================================================
-print("\n[5] Loading IndoBERT model...")
+# Load model IndoBERT
+print("\nLoading IndoBERT model...")
 
 model = AutoModelForSequenceClassification.from_pretrained(
     MODEL_NAME,
@@ -159,10 +144,8 @@ model.to(device)
 print(f"    Model loaded successfully!")
 print(f"    Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
-# =====================================================
-# LANGKAH 6: METRICS FUNCTION
-# =====================================================
 def compute_metrics(pred):
+    """Hitung metrics buat evaluasi"""
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
 
@@ -178,15 +161,13 @@ def compute_metrics(pred):
         'recall': recall
     }
 
-# =====================================================
-# LANGKAH 7: TRAINING ARGUMENTS
-# =====================================================
-print("\n[6] Setting up training arguments...")
+# Setup training arguments
+print("\nSetting up training arguments...")
 
 OUTPUT_DIR = "./models_indobert"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Training arguments - optimized for small dataset
+# Konfigurasi training
 training_args = TrainingArguments(
     output_dir=OUTPUT_DIR,
     num_train_epochs=3,
@@ -202,8 +183,8 @@ training_args = TrainingArguments(
     metric_for_best_model="f1",
     greater_is_better=True,
     seed=42,
-    fp16=device.type == 'cuda',  # Use mixed precision on GPU
-    gradient_accumulation_steps=2,  # Effective batch size = 16
+    fp16=device.type == 'cuda',
+    gradient_accumulation_steps=2,
 )
 
 print(f"    Epochs: {training_args.num_train_epochs}")
@@ -211,10 +192,8 @@ print(f"    Batch size: {training_args.per_device_train_batch_size}")
 print(f"    Effective batch size: {training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps}")
 print(f"    FP16: {training_args.fp16}")
 
-# =====================================================
-# LANGKAH 8: TRAINER
-# =====================================================
-print("\n[7] Initializing Trainer...")
+# Inisialisasi Trainer
+print("\nInitializing Trainer...")
 
 trainer = Trainer(
     model=model,
@@ -225,30 +204,20 @@ trainer = Trainer(
     callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
 )
 
-# =====================================================
-# LANGKAH 9: TRAIN
-# =====================================================
-print("\n" + "="*70)
-print("[8] TRAINING INDOBERT")
-print("="*70)
-print("\nThis may take a while...")
-print("Estimated time: 30-60 min (CPU), 5-10 min (GPU)")
+# Mulai training
+print("\nMelatih model IndoBERT")
+print("Estimasi waktu: 30-60 menit (CPU), 5-10 menit (GPU)")
 
 trainer.train()
 
-# =====================================================
-# LANGKAH 10: EVALUATE
-# =====================================================
-print("\n" + "="*70)
-print("[9] EVALUATION ON TEST SET")
-print("="*70)
+# Evaluasi di test set
+print("\nEvaluasi pada test set")
 
-# Predict on test set
 predictions = trainer.predict(test_dataset)
 preds = predictions.predictions.argmax(-1)
 labels = predictions.label_ids
 
-# Metrics
+# Hitung metrics
 accuracy = accuracy_score(labels, preds)
 precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='binary')
 
@@ -258,11 +227,10 @@ print(f"  Precision: {precision*100:.2f}%")
 print(f"  Recall:    {recall*100:.2f}%")
 print(f"  F1-Score:  {f1*100:.2f}%")
 
-# Classification Report
 print(f"\nClassification Report:")
 print(classification_report(labels, preds, target_names=['MANUSIA', 'AI']))
 
-# Confusion Matrix
+# Hitung confusion matrix
 from sklearn.metrics import confusion_matrix
 cm = confusion_matrix(labels, preds)
 
@@ -271,25 +239,21 @@ print(f"                Predicted: MANUSIA    Predicted: AI")
 print(f"Actual: MANUSIA     {cm[0][0]:>8}          {cm[0][1]:>8}")
 print(f"Actual: AI          {cm[1][0]:>8}          {cm[1][1]:>8}")
 
+# Hitung False Negative Rate
 tn, fp, fn, tp = cm.ravel()
 fnr = fn / (fn + tp) if (fn + tp) > 0 else 0
 print(f"\nFalse Negative Rate: {fnr*100:.2f}%")
 print(f"({fn} AI texts classified as MANUSIA)")
 
-# =====================================================
-# LANGKAH 11: SAVE MODEL
-# =====================================================
-print("\n" + "="*70)
-print("[10] SAVING MODEL")
-print("="*70)
+# Simpen model
+print("\nMenyimpan model")
 
-# Save model and tokenizer
 model_path = f"{OUTPUT_DIR}/final_model"
 model.save_pretrained(model_path)
 tokenizer.save_pretrained(model_path)
 print(f"    Model saved to: {model_path}")
 
-# Save results
+# Kumpulin hasil ke dictionary
 results = {
     'model_name': MODEL_NAME,
     'test_accuracy': accuracy,
@@ -308,26 +272,21 @@ results = {
     }
 }
 
+# Simpen ke JSON
 with open(f"{OUTPUT_DIR}/indobert_results.json", 'w') as f:
     json.dump(results, f, indent=2)
 print(f"    Results saved to: {OUTPUT_DIR}/indobert_results.json")
 
-# =====================================================
-# INFERENCE FUNCTION
-# =====================================================
-print("\n" + "="*70)
-print("[11] INFERENCE FUNCTION EXAMPLE")
-print("="*70)
+# Contoh fungsi inferensi
+print("\nContoh fungsi inferensi")
 
 def predict_text(text, model_path=f"{OUTPUT_DIR}/final_model"):
-    """Predict if text is AI or Human"""
-    # Load model and tokenizer
+    """Prediksi teks pake model IndoBERT"""
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
     model.to(device)
     model.eval()
 
-    # Tokenize
     inputs = tokenizer(
         text,
         truncation=True,
@@ -336,7 +295,6 @@ def predict_text(text, model_path=f"{OUTPUT_DIR}/final_model"):
         return_tensors="pt"
     ).to(device)
 
-    # Predict
     with torch.no_grad():
         outputs = model(**inputs)
         probs = torch.softmax(outputs.logits, dim=1)
@@ -353,11 +311,10 @@ def predict_text(text, model_path=f"{OUTPUT_DIR}/final_model"):
         }
     }
 
-# Test with examples
 print("\nTesting inference function:")
 
 sample_texts = [
-    "Jakarta, CNN Indonesia - - Pemerintah memastikan akan terus meningkatkan pembangunan infrastruktur di seluruh Indonesia.",
+    "Jakarta, CNN Indonesia - Pemerintah memastikan akan terus meningkatkan pembangunan infrastruktur di seluruh Indonesia.",
     "Implementasi teknologi AI dalam kehidupan sehari-hari membawa perubahan signifikan dalam berbagai aspek kehidupan manusia modern."
 ]
 
@@ -367,12 +324,8 @@ for text in sample_texts:
     print(f"  Prediction: {result['label']}")
     print(f"  Confidence: {result['confidence']*100:.2f}%")
 
-print("\n" + "="*70)
-print("INDOBERT TRAINING COMPLETED!")
-print("="*70)
+print("\nTraining IndoBERT selesai!")
 print(f"""
-Model IndoBERT telah ditraining untuk klasifikasi AI vs MANUSIA.
-
 Hasil:
 - Test Accuracy: {accuracy*100:.2f}%
 - Test F1-Score: {f1*100:.2f}%

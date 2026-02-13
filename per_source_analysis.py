@@ -1,8 +1,3 @@
-"""
-Analisis Detail Per Sumber Data Manusia
-Melihat performa deteksi per kategori sumber (IndoSum, Reddit, Twitter, dll)
-"""
-
 import pandas as pd
 import numpy as np
 import joblib
@@ -11,12 +6,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import warnings
 warnings.filterwarnings('ignore')
 
-print("="*70)
 print("ANALISIS DETAIL PER SUMBER DATA MANUSIA")
-print("="*70)
-
-# Load semua file manusia
-print("\n[1] Load file data manusia...")
 
 human_files = [
     "data_manusia_indosum_250.csv",
@@ -44,23 +34,17 @@ if not all_human_data:
     print("  Tidak ada data manusia yang bisa dimuat")
     exit(1)
 
-# Gabungkan semua data manusia
-print(f"\n[2] Menggabungkan {len(all_human_data)} file...")
 human_df = pd.concat(all_human_data, ignore_index=True)
-print(f"  Total data manusia: {len(human_df)}")
+print(f"\nTotal data manusia: {len(human_df)}")
 
-# Load data AI
-print("\n[3] Load data AI...")
+print("\nLoad data AI...")
 ai_df = pd.read_csv("data_ai_all_clean.csv", encoding='utf-8')
 print(f"  Total data AI: {len(ai_df)}")
 
-# Load model dan vectorizer
-print("\n[4] Load model dan vectorizer...")
+print("\nLoad model dan vectorizer...")
 model = joblib.load('models/random_forest_model.pkl')
 vectorizer = joblib.load('models/tfidf_vectorizer.pkl')
 
-# Gabungkan untuk prediksi
-print("\n[5] Gabungkan data...")
 human_df['true_label'] = 'MANUSIA'
 ai_df['true_label'] = 'AI'
 
@@ -72,8 +56,7 @@ combined_df = pd.concat([
 combined_df = combined_df.dropna(subset=['text'])
 print(f"  Total combined: {len(combined_df)}")
 
-# TF-IDF transform
-print("\n[6] Transform dan predict...")
+print("\nTransform dan predict...")
 X_tfidf = vectorizer.transform(combined_df['text'])
 
 label_mapping = {'MANUSIA': 0, 'AI': 1}
@@ -88,10 +71,8 @@ combined_df['proba_manusia'] = y_proba[:, 0]
 combined_df['proba_ai'] = y_proba[:, 1]
 combined_df['is_correct'] = combined_df['true_label'] == combined_df['predicted_label']
 
-# Analisis per sumber
 print("\n" + "="*70)
 print("ANALISIS PER SUMBER DATA")
-print("="*70)
 
 sources = combined_df['source'].unique()
 print(f"\nDitemukan {len(sources)} sumber:")
@@ -105,9 +86,7 @@ for source in sorted(sources):
     wrong = total - correct
     accuracy = (correct / total * 100) if total > 0 else 0
 
-    # Confidence rata-rata
     correct_subset = subset[subset['is_correct']]
-    wrong_subset = subset[~subset['is_correct']]
 
     if len(correct_subset) > 0:
         if source == 'AI':
@@ -133,10 +112,8 @@ print("-"*70)
 for r in sorted(results_summary, key=lambda x: x['Accuracy'], reverse=True):
     print(f"{r['Source']:<25} {r['Total']:>6} {r['Correct']:>6} {r['Wrong']:>6} {r['Accuracy']:>9.2f}% {r['Avg Confidence']:>7.1f}%")
 
-# Detail per sumber manusia
 print("\n" + "="*70)
 print("DETAIL ANALISIS SUMBER MANUSIA")
-print("="*70)
 
 human_sources = [s for s in sources if s != 'AI']
 
@@ -159,17 +136,15 @@ for source in sorted(human_sources):
         print(f"  Max: {correct['proba_manusia'].max()*100:.2f}%")
 
     if len(wrong) > 0:
-        print(f"\nContoh yang salah diprediksi:")
+        print("\nContoh yang salah diprediksi:")
         for i, (idx, row) in enumerate(wrong.head(3).iterrows(), 1):
             print(f"\n  [{i}] Manusia -> AI")
             print(f"      Confidence AI: {row['proba_ai']*100:.1f}%")
             print(f"      Panjang: {len(row['text'])} karakter")
             print(f"      Text: {row['text'][:150]}...")
 
-# Analisis per panjang teks
 print("\n" + "="*70)
 print("ANALISIS BERDASARKAN PANJANG TEKS")
-print("="*70)
 
 combined_df['text_length'] = combined_df['text'].str.len()
 
@@ -195,10 +170,8 @@ for min_len, max_len, label in length_bins:
         accuracy = (subset['is_correct'].sum() / len(subset) * 100)
         print(f"{label:<20} {len(subset):>6} {wrong:>6} {accuracy:>9.2f}%")
 
-# Distribusi panjang per sumber
 print("\n" + "="*70)
 print("STATISTIK PANJANG TEKS PER SUMBER")
-print("="*70)
 
 print(f"\n{'Source':<25} {'Mean':>8} {'Median':>8} {'Min':>6} {'Max':>6}")
 print("-"*70)
@@ -209,27 +182,21 @@ for source in sorted(sources):
         lengths = subset['text_length']
         print(f"{source:<25} {lengths.mean():>8.0f} {lengths.median():>8.0f} {lengths.min():>6.0f} {lengths.max():>6.0f}")
 
-# Export hasil
 print("\n" + "="*70)
 print("EXPORT HASIL")
-print("="*70)
 
 combined_df.to_csv('per_source_analysis_results.csv', index=False, encoding='utf-8')
 print("\n[OK] Export: per_source_analysis_results.csv")
 
-# Export summary per source
 summary_df = pd.DataFrame(results_summary)
 summary_df.to_csv('per_source_summary.csv', index=False, encoding='utf-8')
 print("[OK] Export: per_source_summary.csv")
 
 print("\n" + "="*70)
 print("ANALISIS PER SUMBER SELESAI!")
-print("="*70)
 
-# Ringkasan
 print("\n" + "="*70)
 print("RINGKASAN UTAMA")
-print("="*70)
 
 best_source = max(results_summary, key=lambda x: x['Accuracy'])
 worst_source = min(results_summary, key=lambda x: x['Accuracy'])
@@ -243,6 +210,3 @@ Sumber dengan Accuracy TERENDAH:
 
 Total Error: {(combined_df['is_correct'] == False).sum()} dari {len(combined_df)} data
 Overall Accuracy: {(combined_df['is_correct'].sum() / len(combined_df) * 100):.2f}%
-""")
-
-print("="*70)
