@@ -1,23 +1,24 @@
-# 🤖 Deteksi Tulisan AI vs Manusia (Bahasa Indonesia)
+# Deteksi Tulisan AI vs Manusia (Bahasa Indonesia)
 
-Project Skripsi - Sistem Klasifikasi Machine Learning untuk membedakan tulisan yang dihasilkan oleh AI dan manusia dalam Bahasa Indonesia.
+Project Skripsi - Sistem Klasifikasi Machine Learning buat membedakan tulisan yang dibuat oleh AI dan manusia dalam Bahasa Indonesia.
 
-## 📊 Dataset
+## Dataset
 
-### 📥 Download Dataset & Model
-Dataset dan model besar dapat diunduh dari Google Drive:
+### Download Dataset & Model
+
+Dataset dan model gede bisa diunduh dari Google Drive:
 
 **[Google Drive Folder](https://drive.google.com/drive/folders/15vydyLv3M7Ap4lruqLBWxV80PvIg4hHA?usp=sharing)**
 
 Isi folder:
 - `dataset_final_1500.csv` - Dataset utama (~1.5 MB)
-- `models_indobert/` - IndoBERT model (~475 MB)
+- `models_indobert/` - Model IndoBERT (~475 MB)
 
 **Cara pakai:**
 1. Clone repository ini
 2. Download dataset dari Google Drive di atas
 3. Letakkan `dataset_final_1500.csv` di folder project
-4. (Opsional) Download & letakkan folder `models_indobert/` untuk pakai IndoBERT
+4. (Optional) Download & letakkan folder `models_indobert/` buat pakai IndoBERT
 
 ### Info Dataset
 - **Total Data:** 1,510 teks
@@ -36,7 +37,7 @@ Isi folder:
 - Groq (1 model)
 - HuggingFace (2 model)
 
-## 🎯 Hasil Training
+## Hasil Training
 
 | Model | Test Accuracy | Precision | Recall | F1-Score |
 |--------|---------------|-----------|--------|-----------|
@@ -45,7 +46,7 @@ Isi folder:
 | Random Forest | 98.68% | 97.4% | 100% | 98.7% |
 | IndoBERT | **100.00%** | 100% | 100% | 100% |
 
-## 📁 Struktur Project
+## Struktur Project
 
 ```
 .
@@ -75,7 +76,7 @@ Isi folder:
     └── ...
 ```
 
-## 🚀 Cara Penggunaan
+## Cara Penggunaan
 
 ### 1. Training Model
 
@@ -118,7 +119,7 @@ print(f"Prediksi: {label_name}")
 print(f"Confidence: {max(proba)*100:.2f}%")
 ```
 
-## 📦 Requirements
+## Requirements
 
 ```
 pandas
@@ -138,7 +139,7 @@ Install:
 pip install -r requirements.txt
 ```
 
-## 📈 Hasil Analisis
+## Hasil Analisis
 
 ### Cross-Validation Results (Strict CV - No Leakage)
 - Logistic Regression: **99.67% ± 0.41%**
@@ -151,14 +152,14 @@ pip install -r requirements.txt
 - Random Forest: **82.92%** (gap -15.75%)
 
 ### Threshold Recommendations
-- **Default (0.5):** Untuk penggunaan umum
-- **Balanced (0.55):** Rekomendasi untuk production
-- **Conservative (0.60):** Untuk keamanan tinggi (FNR lebih rendah)
+- **Default (0.5):** Buat penggunaan umum
+- **Balanced (0.55):** Rekomendasi buat production
+- **Conservative (0.60):** Buat keamanan tinggi (FNR lebih rendah)
 
-## 👤 Author
+## Author
 
-Dibuat untuk Skripsi Sarjana Teknik Informatika
+Dibuat buat Skripsi Sarjana Teknik Informatika
 
-## 📄 Lisensi
+## Lisensi
 
-Project ini hanya untuk keperluan edukasi dan penelitian skripsi.
+Project ini hanya buat keperluan edukasi dan penelitian skripsi.
