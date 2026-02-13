@@ -1,0 +1,356 @@
+{
+  "analysis_date": "2026-02-11T21:16:32.417536",
+  "dataset_size": 1510,
+  "test_size": 302,
+  "models": {
+    "Random Forest": {
+      "threshold_results": [
+        {
+          "threshold": 0.3,
+          "accuracy": 0.9172185430463576,
+          "precision": 0.8587570621468926,
+          "recall": 1.0,
+          "f1": 0.9240121580547113,
+          "fnr": 0.0,
+          "tn": 125,
+          "fp": 25,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.35,
+          "accuracy": 0.9370860927152318,
+          "precision": 0.8888888888888888,
+          "recall": 1.0,
+          "f1": 0.9411764705882353,
+          "fnr": 0.0,
+          "tn": 131,
+          "fp": 19,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.39999999999999997,
+          "accuracy": 0.9470198675496688,
+          "precision": 0.9047619047619048,
+          "recall": 1.0,
+          "f1": 0.95,
+          "fnr": 0.0,
+          "tn": 134,
+          "fp": 16,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.44999999999999996,
+          "accuracy": 0.9801324503311258,
+          "precision": 0.9620253164556962,
+          "recall": 1.0,
+          "f1": 0.9806451612903225,
+          "fnr": 0.0,
+          "tn": 144,
+          "fp": 6,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.49999999999999994,
+          "accuracy": 0.9834437086092715,
+          "precision": 0.9681528662420382,
+          "recall": 1.0,
+          "f1": 0.9838187702265372,
+          "fnr": 0.0,
+          "tn": 145,
+          "fp": 5,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.5499999999999999,
+          "accuracy": 0.9900662251655629,
+          "precision": 0.9806451612903225,
+          "recall": 1.0,
+          "f1": 0.990228013029316,
+          "fnr": 0.0,
+          "tn": 147,
+          "fp": 3,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.5999999999999999,
+          "accuracy": 0.9933774834437086,
+          "precision": 0.993421052631579,
+          "recall": 0.993421052631579,
+          "f1": 0.993421052631579,
+          "fnr": 0.006578947368421052,
+          "tn": 149,
+          "fp": 1,
+          "fn": 1,
+          "tp": 151
+        },
+        {
+          "threshold": 0.6499999999999999,
+          "accuracy": 0.9867549668874173,
+          "precision": 1.0,
+          "recall": 0.9736842105263158,
+          "f1": 0.9866666666666667,
+          "fnr": 0.02631578947368421,
+          "tn": 150,
+          "fp": 0,
+          "fn": 4,
+          "tp": 148
+        },
+        {
+          "threshold": 0.7,
+          "accuracy": 0.9867549668874173,
+          "precision": 1.0,
+          "recall": 0.9736842105263158,
+          "f1": 0.9866666666666667,
+          "fnr": 0.02631578947368421,
+          "tn": 150,
+          "fp": 0,
+          "fn": 4,
+          "tp": 148
+        }
+      ],
+      "optimal_threshold": 0.5499999999999999
+    },
+    "Logistic Regression": {
+      "threshold_results": [
+        {
+          "threshold": 0.3,
+          "accuracy": 0.9437086092715232,
+          "precision": 0.8994082840236687,
+          "recall": 1.0,
+          "f1": 0.9470404984423676,
+          "fnr": 0.0,
+          "tn": 133,
+          "fp": 17,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.35,
+          "accuracy": 0.9635761589403974,
+          "precision": 0.9325153374233128,
+          "recall": 1.0,
+          "f1": 0.9650793650793651,
+          "fnr": 0.0,
+          "tn": 139,
+          "fp": 11,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.39999999999999997,
+          "accuracy": 0.9900662251655629,
+          "precision": 0.9806451612903225,
+          "recall": 1.0,
+          "f1": 0.990228013029316,
+          "fnr": 0.0,
+          "tn": 147,
+          "fp": 3,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.44999999999999996,
+          "accuracy": 0.9966887417218543,
+          "precision": 0.9934640522875817,
+          "recall": 1.0,
+          "f1": 0.9967213114754099,
+          "fnr": 0.0,
+          "tn": 149,
+          "fp": 1,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.49999999999999994,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.5499999999999999,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.5999999999999999,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.6499999999999999,
+          "accuracy": 0.9900662251655629,
+          "precision": 1.0,
+          "recall": 0.9802631578947368,
+          "f1": 0.9900332225913622,
+          "fnr": 0.019736842105263157,
+          "tn": 150,
+          "fp": 0,
+          "fn": 3,
+          "tp": 149
+        },
+        {
+          "threshold": 0.7,
+          "accuracy": 0.9834437086092715,
+          "precision": 1.0,
+          "recall": 0.9671052631578947,
+          "f1": 0.9832775919732442,
+          "fnr": 0.03289473684210526,
+          "tn": 150,
+          "fp": 0,
+          "fn": 5,
+          "tp": 147
+        }
+      ],
+      "optimal_threshold": 0.49999999999999994
+    },
+    "SVM": {
+      "threshold_results": [
+        {
+          "threshold": 0.3,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.35,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.39999999999999997,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.44999999999999996,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.49999999999999994,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.5499999999999999,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.5999999999999999,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.6499999999999999,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        },
+        {
+          "threshold": 0.7,
+          "accuracy": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "fnr": 0.0,
+          "tn": 150,
+          "fp": 0,
+          "fn": 0,
+          "tp": 152
+        }
+      ],
+      "optimal_threshold": 0.3
+    }
+  },
+  "recommendations": {
+    "default_threshold": 0.5,
+    "conservative_threshold": 0.6,
+    "balanced_threshold": 0.55,
+    "explanation": {
+      "default": "Standard threshold, may have higher FNR",
+      "conservative": "Lower FNR (fewer AI passing as human), but more false positives",
+      "balanced": "Good balance between precision and recall"
+    }
+  }
+}

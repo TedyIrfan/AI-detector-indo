@@ -1,0 +1,19 @@
+{
+  "model_name": "indobenchmark/indobert-base-p1",
+  "test_accuracy": 1.0,
+  "test_precision": 1.0,
+  "test_recall": 1.0,
+  "test_f1": 1.0,
+  "false_negative_rate": 0.0,
+  "confusion_matrix": {
+    "tn": 150,
+    "fp": 0,
+    "fn": 0,
+    "tp": 152
+  },
+  "training_args": {
+    "epochs": 3,
+    "batch_size": 8,
+    "max_length": 512
+  }
+}

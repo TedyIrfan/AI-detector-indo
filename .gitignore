@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.so
+
+# Dataset sumber (bukan final)
+data_manusia_*.csv
+data_ai_*.csv
+dataset_final_1000.csv
+dataset_final_1500.csv
+dataset_ai_*.csv
+
+# File hasil analisis (banyak duplikat)
+analysis_*.csv
+ambiguous_*.csv
+ablation_*.csv
+per_source_*.csv
+per_source_summary.csv
+error_*.csv
+feature_*.csv
+low_confidence*.csv
+model_comparison*.csv
+model_comparison_summary.csv
+linguistic_analysis_results.csv
+
+# Visualisasi duplikat (akan dipilih yang penting saja)
+cv_scores_plot.png
+learning_curve.png
+precision_recall_curve.png
+probability_distribution.png
+
+# Archive folder
+archive_*/
+archive_*/
+
+# Model checkpoints (kecuali final)
+models_indobert/checkpoint-*/
+
+# Large model files (IndoBERT > 100MB)
+models_indobert/final_model/model.safetensors
+models_indobert/final_model/
+
+# File lain
+nul
+=1.1.0
+.DS_Store
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Environment
+venv/
+env/
+ENV/
